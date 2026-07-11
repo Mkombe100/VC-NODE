@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Video Meeting</title>
+
+
+<style>
+
+*{
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+
+body{
+
+    margin:0;
+    height:100vh;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    background:#111;
+
+}
+
+
+
+.card{
+
+    width:350px;
+
+    background:white;
+
+    padding:30px;
+
+    border-radius:15px;
+
+    text-align:center;
+
+}
+
+
+
+h1{
+
+    margin-bottom:25px;
+
+}
+
+
+
+input{
+
+    width:100%;
+
+    padding:12px;
+
+    border-radius:8px;
+
+    border:1px solid #ccc;
+
+    font-size:16px;
+
+    margin:15px 0;
+
+}
+
+
+
+button{
+
+    width:100%;
+
+    padding:12px;
+
+    margin:8px 0;
+
+    border:none;
+
+    border-radius:8px;
+
+    cursor:pointer;
+
+    font-size:16px;
+
+    color:white;
+
+    background:#2563eb;
+
+}
+
+
+
+button:hover{
+
+    opacity:.9;
+
+}
+
+
+
+#createBtn{
+
+    background:#16a34a;
+
+}
+
+
+
+#message{
+
+    margin-top:15px;
+
+    color:red;
+
+}
+
+
+
+</style>
+
+
+</head>
+
+
+
+<body>
+
+
+
+<div class="card">
+
+
+<h1>
+Video Meeting
+</h1>
+
+
+
+<button id="createBtn">
+Create Room
+</button>
+
+
+
+<input
+id="roomCode"
+placeholder="Enter room code"
+/>
+
+
+
+<button id="joinBtn">
+Join Room
+</button>
+
+
+
+<p id="message"></p>
+
+
+</div>
+
+
+
+<script src="/socket.io/socket.io.js"></script>
+
+
+
+<script>
+
+
+const socket = io();
+
+
+
+const message =
+document.getElementById("message");
+
+
+const roomCode =
+document.getElementById("roomCode");
+
+
+
+
+
+// CREATE ROOM
+
+
+document
+.getElementById("createBtn")
+.onclick=()=>{
+
+
+socket.emit(
+"create-room"
+);
+
+
+};
+
+
+
+
+
+socket.on(
+"room-created",
+(room)=>{
+
+
+window.location.href =
+"room.html?room="+room;
+
+
+});
+
+
+
+
+
+
+
+// JOIN ROOM
+
+
+
+document
+.getElementById("joinBtn")
+.onclick=()=>{
+
+
+const room =
+roomCode.value.trim();
+
+
+
+if(!room){
+
+message.textContent =
+"Enter room code";
+
+return;
+
+}
+
+
+
+socket.emit(
+"check-room",
+room
+);
+
+
+
+};
+
+
+
+
+
+
+socket.on(
+"room-exists",
+(room)=>{
+
+
+window.location.href =
+"room.html?room="+room;
+
+
+});
+
+
+
+
+
+socket.on(
+"room-not-found",
+()=>{
+
+
+message.textContent =
+"No room found";
+
+
+});
+
+
+
+
+
+
+</script>
+
+
+</body>
+
+</html>

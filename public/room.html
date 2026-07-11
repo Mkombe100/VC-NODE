@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Room</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #111;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #top {
+            height: 50px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            font-size: 1rem;
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+        }
+
+        #participants {
+            height: calc(100vh - 50px);
+            display: grid;
+            gap: 8px;
+            padding: 8px;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #1a1a1a;
+            border-radius: 10px;
+            display: block;
+            /* default: no mirror */
+            transform: scaleX(1);
+        }
+
+        /* --- mirror effect for local video (like a mirror) --- */
+        #localVideo {
+            transform: scaleX(-1);
+        }
+
+        /* --- responsive grid layouts (unchanged classes) --- */
+        .one {
+            grid-template-columns: 1fr;
+        }
+
+        .two {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .three {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .three video:first-child {
+            grid-column: 1 / 3;
+        }
+
+        .four {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+        }
+
+        /* ---- extra responsiveness for very small screens ---- */
+        @media (max-width: 600px) {
+            .two {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr 1fr;
+            }
+
+            .three {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr 1fr 1fr;
+            }
+            .three video:first-child {
+                grid-column: 1 / 2;
+            }
+
+            .four {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .four {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(4, 1fr);
+            }
+        }
+
+        #participants {
+            align-content: stretch;
+        }
+
+        video {
+            min-height: 0;
+            min-width: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="top">
+        Room:
+        <span id="room"></span>
+    </div>
+
+    <div id="participants" class="one">
+        <video id="localVideo" autoplay muted playsinline></video>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="room.js"></script>
+    <!-- tiny extra script to maintain mirror and responsive grid -->
+    <script>
+        (function() {
+            // ensure local video stays mirrored (scaleX(-1)) at all times
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.style.transform = 'scaleX(-1)';
+            }
+
+            // function to adjust grid based on number of videos
+            function adjustGrid() {
+                const container = document.getElementById('participants');
+                if (!container) return;
+                const videos = container.querySelectorAll('video');
+                const count = videos.length;
+                container.classList.remove('one', 'two', 'three', 'four');
+                if (count <= 1) {
+                    container.classList.add('one');
+                } else if (count === 2) {
+                    container.classList.add('two');
+                } else if (count === 3) {
+                    container.classList.add('three');
+                } else {
+                    container.classList.add('four');
+                }
+            }
+
+            // observe mutations if new videos are added (dynamic participants)
+            const observer = new MutationObserver(() => {
+                adjustGrid();
+                // ensure local video remains mirrored (in case something overrides)
+                const loc = document.getElementById('localVideo');
+                if (loc) loc.style.transform = 'scaleX(-1)';
+                // also ensure any other video (remote) stays non-mirrored (scaleX(1))
+                document.querySelectorAll('video:not(#localVideo)').forEach(v => {
+                    v.style.transform = 'scaleX(1)';
+                });
+            });
+            const container = document.getElementById('participants');
+            if (container) {
+                observer.observe(container, { childList: true, subtree: false });
+            }
+
+            // initial adjustment after load
+            window.addEventListener('load', function() {
+                adjustGrid();
+                const loc = document.getElementById('localVideo');
+                if (loc) loc.style.transform = 'scaleX(-1)';
+                document.querySelectorAll('video:not(#localVideo)').forEach(v => {
+                    v.style.transform = 'scaleX(1)';
+                });
+            });
+
+            // also on resize to keep grid responsive
+            window.addEventListener('resize', adjustGrid);
+
+            // periodic check to keep mirror and grid correct (for any late additions)
+            setInterval(function() {
+                const loc = document.getElementById('localVideo');
+                if (loc && loc.style.transform !== 'scaleX(-1)') {
+                    loc.style.transform = 'scaleX(-1)';
+                }
+                // ensure remote videos are not mirrored
+                document.querySelectorAll('video:not(#localVideo)').forEach(v => {
+                    if (v.style.transform !== 'scaleX(1)') {
+                        v.style.transform = 'scaleX(1)';
+                    }
+                });
+                adjustGrid();
+            }, 500);
+        })();
+    </script>
+</body>
+
+</html>
